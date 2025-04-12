@@ -4,6 +4,13 @@
 #define N 40
 #define PI 3.142
 #define CUBE 3//(float)285/(N*2-1)
+#define SW 285
+#define BW 600
+#define SPEED 0.15
+#define RAYS 1000
+#define ANGLE 90
+#define RADIANS(x) (((float)x/180*PI))
+#define THREAD_COUNT 6
 
 class Maze{
     int arr[2*N-1][2*N-1];

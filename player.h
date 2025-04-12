@@ -6,24 +6,32 @@
 #include "SFML/Graphics.hpp"
 #include <pthread.h>
 using namespace sf;
-#define SPEED 0.15
-#define RAYS 1000
-#define ANGLE 90
 
+struct Data {   
+    int startIndex;
+    int endIndex;
+    Maze* maze;
+    Player* player;
+    Data(int start, int end, Maze* maze, Player* player)
+        : startIndex(start), endIndex(end), maze(maze), player(player) {}
+};
 
 
 
 class Player{
     CircleShape player;
     std::vector<Ray> rays;
+    pthread_t threads[THREAD_COUNT];
+    std::vector<Data*> threadData;
+    Maze* maze;
     public:
-        Player();
-        void draw(RenderWindow* windowOne, const Maze* maze);
+        Player(Maze* maze);
+        void draw(RenderWindow* windowOne);
         float rotation();
         Vector2f position();
         Ray* ray(int i);
-        bool checkCollision(const Maze& maze) const;
-        void move(const Maze& maze);
+        bool checkCollision() const;
+        void move();
         void turnR();
         void turnL();
         void reset();

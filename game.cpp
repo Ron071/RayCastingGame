@@ -3,8 +3,8 @@
 #include <SFML/Audio.hpp>
 
 
-Game::Game(){  
-}
+Game::Game():player(&maze){}
+
 void Game::game(){
     sf::ContextSettings settings;
     settings.antialiasingLevel = 8; 
@@ -21,7 +21,7 @@ void Game::game(){
             }    
         }
         if(Keyboard::isKeyPressed(Keyboard::W)){
-            player.move(maze);
+            player.move();
         }
         if(Keyboard::isKeyPressed(Keyboard::A)){
             player.turnL();
@@ -29,11 +29,8 @@ void Game::game(){
         if(Keyboard::isKeyPressed(Keyboard::D)){
             player.turnR();
         }
-        /*if(Keyboard::isKeyPressed(Keyboard::U)){
-            update();
-        }*/
         window.clear();
-        player.draw(&window, &maze);
+        player.draw(&window);
         window.display();  
         // avr += (int)(1.0f / deltaTime.asSeconds());
         // count++;
@@ -49,8 +46,4 @@ void Game::update(){
     player.reset();
     maze.updateMaze();
 }
-
-
-
-
 ////   g++ -g game.cpp main.cpp maze.cpp player.cpp ray.cpp  -lsfml-graphics -lsfml-window -lsfml-system -pthread -o game

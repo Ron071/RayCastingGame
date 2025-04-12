@@ -54,11 +54,11 @@ void Maze::draw(sf::RenderWindow* window) const{
     for(int i = 0; i < 2*N-1; i++){
         for(int j = 0; j < 2*N-1; j++){
             if(this->arr[i][j] == 0){
-                cube.setPosition(CUBE*j, (600-2*N*CUBE) + CUBE*i);
+                cube.setPosition(CUBE*j, (BW-2*N*CUBE) + CUBE*i);
                 window->draw(cube);
             }
             else if(this->arr[i][j] == 2){
-                cube2.setPosition(CUBE*j, (600-2*N*CUBE)+ CUBE*i);
+                cube2.setPosition(CUBE*j, (BW-2*N*CUBE)+ CUBE*i);
                 window->draw(cube2);
             }
         }

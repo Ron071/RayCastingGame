@@ -2,8 +2,6 @@
 #define GAME_H
 #include "maze.h"
 #include "player.h"
-#define SW 285
-#define BW 600
 
 class Game{
     Player player;
