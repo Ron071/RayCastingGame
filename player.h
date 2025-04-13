@@ -6,7 +6,7 @@
 #include "SFML/Graphics.hpp"
 #include <pthread.h>
 using namespace sf;
-#define SPEED 1
+#define SPEED 0.1
 #define RAYS 1000
 #define ANGLE 90
 

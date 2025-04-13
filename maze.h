@@ -1,13 +1,14 @@
 #ifndef MAZE_H
 #define MAZE_H
-#include "SFML/Graphics.hpp"
-#define N 40
+
+#define NUMBER 20
 #define PI 3.142
-#define CUBE 3//(float)285/(N*2-1)
+#define CUBE 7 // 285/(NUMBER*2-1)
+#include "SFML/Graphics.hpp"
 using namespace std;
 
 class Maze{
-    int arr[2*N-1][2*N-1];
+    int arr[2*NUMBER-1][2*NUMBER-1];
     public:
         Maze();
         void draw(sf::RenderWindow* w) const;

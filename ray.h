@@ -7,14 +7,14 @@ using namespace sf;
 
 
 class Ray{
-    VertexArray ray;
+    Vector2f start;
+    Vector2f end;
     float lenght;
     public:
         Ray();
         float len();
         void setPoints(Vector2f one, Vector2f two);
-        void draw(RenderWindow* windowOne) const;
-        sf::Vector2f finalPoint(float angle, const Maze* maze,  Vector2f current);
+        Vector2f draw(float angle, const Maze* maze,  Vector2f current, RenderWindow* window, bool display = true);
 };
 
 #endif //RAY_H

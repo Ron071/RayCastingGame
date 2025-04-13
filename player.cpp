@@ -10,9 +10,9 @@
 
 pthread_mutex_t lock;
 
-Player::Player():player(CircleShape(3,10)){
+Player::Player():player(CircleShape(2,10)){
     player.setPosition(sf::Vector2f(CUBE*1.5,CUBE*1.5));
-    player.setOrigin(sf::Vector2f(3,3));
+    player.setOrigin(sf::Vector2f(2,2));
     for(int i = 0; i < RAYS; i++)rays.push_back(Ray());
 }
 float Player::rotation(){
@@ -73,13 +73,11 @@ void Player::draw(RenderWindow* window, const Maze* maze){
         Vector2f current = this->position();
         float rotation = this->rotation();
         for(int i = 0; i <= RAYS; i++){
-            float direction = atan((float)2*(i-RAYS/2)/RAYS);
+            float direction = atan(2*(float)(i-RAYS/2)/RAYS);
             float cosAngle = cos(direction);
             direction += rotation;
             if(direction > 2*PI)direction -= 2*PI;
-            //rays[i].finalPoint(direction, maze, current);
-            rays[i].setPoints(current, rays[i].finalPoint(direction, maze, current));
-            //rays[i].draw(window);
+            rays[i].draw(direction, maze, current, window); // add false to not draw lines 
             float height =(float)BW*CUBE/rays[i].len()/cosAngle;
             RectangleShape shape(Vector2f((float)BW/RAYS, height));
             shape.setFillColor(Color(0,256*(1-(float)rays[i].len()/RAY_LEN), 0));
@@ -87,9 +85,7 @@ void Player::draw(RenderWindow* window, const Maze* maze){
             window->draw(shape);
         }
         maze->draw(window);
-        CircleShape temp = player;
-        temp.move(Vector2f(0,(BW-2*N*CUBE)));
-        window->draw(temp);
+        window->draw(player);
 }
 bool Player::checkCollision(const Maze& maze){
     Vector2f willBe = player.getPosition() + Vector2f(cos(this->rotation()), sin(this->rotation()));
@@ -101,10 +97,10 @@ void Player::move(const Maze& maze){
     }
 }
 void Player::turnR(){
-    player.rotate(sf::degrees(5));
+    player.rotate(sf::degrees(6*SPEED));
 }
 void Player::turnL(){
-    player.rotate(sf::degrees(-5));
+    player.rotate(sf::degrees(-6*SPEED));
 }
 void Player::reset(){
     player.setPosition(Vector2f(CUBE*1.5,CUBE*1.5));

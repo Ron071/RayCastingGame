@@ -17,20 +17,15 @@ void Game::game(){
                 window.close();
                 exit(0);
             }
-            if (const auto key = event->getIf<sf::Event::KeyPressed>()){
-                if(key->code == sf::Keyboard::Key::W){
-                    player.move(maze);
-                }
-                if(key->code == sf::Keyboard::Key::A){
-                    player.turnL();
-                }
-                if(key->code == sf::Keyboard::Key::D){
-                    player.turnR();
-                }
-                /*if(key->code == sf::Keyboard::Key::U){
-                    update();
-                }*/
-            }
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) {
+            player.move(maze);
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) {
+            player.turnL(); 
+        }
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) {
+            player.turnR(); 
         }
         window.clear();
         player.draw(&window, &maze);
