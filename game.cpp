@@ -1,37 +1,37 @@
 #include "game.h"
 #include <iostream>
-#include <SFML/Audio.hpp>
+#include "SFML/Audio.hpp"
 
 
 Game::Game(){  
 }
 void Game::game(){
     sf::ContextSettings settings;
-    settings.antialiasingLevel = 8; 
-    sf::RenderWindow window(sf::VideoMode(BW, BW), "GAME", sf::Style::Default, settings);
-    window.setFramerateLimit(30);
+    sf::RenderWindow window(sf::VideoMode(Vector2u(BW,BW)), "GAME");
+    window.setFramerateLimit(60);
     // sf::Clock clock; 
     // sf::Time deltaTime;
     while(window.isOpen()){
-        Event event;
-        while(window.pollEvent(event)){
-            if(event.type == Event::Closed){
+        while (const std::optional event = window.pollEvent()){
+            if (event->is<sf::Event::Closed>()){
                 window.close();
                 exit(0);
-            }    
+            }
+            if (const auto key = event->getIf<sf::Event::KeyPressed>()){
+                if(key->code == sf::Keyboard::Key::W){
+                    player.move(maze);
+                }
+                if(key->code == sf::Keyboard::Key::A){
+                    player.turnL();
+                }
+                if(key->code == sf::Keyboard::Key::D){
+                    player.turnR();
+                }
+                /*if(key->code == sf::Keyboard::Key::U){
+                    update();
+                }*/
+            }
         }
-        if(Keyboard::isKeyPressed(Keyboard::W)){
-            player.move(maze);
-        }
-        if(Keyboard::isKeyPressed(Keyboard::A)){
-            player.turnL();
-        }
-        if(Keyboard::isKeyPressed(Keyboard::D)){
-            player.turnR();
-        }
-        /*if(Keyboard::isKeyPressed(Keyboard::U)){
-            update();
-        }*/
         window.clear();
         player.draw(&window, &maze);
         window.display();  
@@ -53,4 +53,9 @@ void Game::update(){
 
 
 
-////   g++ -g game.cpp main.cpp maze.cpp player.cpp ray.cpp  -lsfml-graphics -lsfml-window -lsfml-system -pthread -o game
+/*   g++ -g -std=c++23 main.cpp game.cpp maze.cpp player.cpp ray.cpp \
+    -I /Users/ronaldgrinberg/Desktop/SFML-3.0.0/include \
+    -L /Users/ronaldgrinberg/Desktop/SFML-3.0.0/lib \
+    -lsfml-graphics -lsfml-window -lsfml-system -pthread \
+    -o game -Wl,-rpath,/Users/ronaldgrinberg/Desktop/SFML-3.0.0/lib  
+*/

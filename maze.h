@@ -4,6 +4,7 @@
 #define N 40
 #define PI 3.142
 #define CUBE 3//(float)285/(N*2-1)
+using namespace std;
 
 class Maze{
     int arr[2*N-1][2*N-1];

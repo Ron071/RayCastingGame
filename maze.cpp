@@ -48,17 +48,17 @@ Maze::Maze(){
 }
 void Maze::draw(sf::RenderWindow* window) const{
     sf::RectangleShape cube(sf::Vector2f(CUBE, CUBE));
-    cube.setFillColor(sf::Color::Magenta);
+    cube.setFillColor(sf::Color::Blue);
     sf::RectangleShape cube2(sf::Vector2f(CUBE, CUBE));
     cube2.setFillColor(sf::Color::Black);
     for(int i = 0; i < 2*N-1; i++){
         for(int j = 0; j < 2*N-1; j++){
             if(this->arr[i][j] == 0){
-                cube.setPosition(CUBE*j, (600-2*N*CUBE) + CUBE*i);
+                cube.setPosition(sf::Vector2f(CUBE*j, (600-2*N*CUBE) + CUBE*i));
                 window->draw(cube);
             }
             else if(this->arr[i][j] == 2){
-                cube2.setPosition(CUBE*j, (600-2*N*CUBE)+ CUBE*i);
+                cube2.setPosition(sf::Vector2f(CUBE*j, (600-2*N*CUBE)+ CUBE*i));
                 window->draw(cube2);
             }
         }

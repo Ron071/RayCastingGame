@@ -6,7 +6,7 @@
 #include "SFML/Graphics.hpp"
 #include <pthread.h>
 using namespace sf;
-#define SPEED 0.15
+#define SPEED 1
 #define RAYS 1000
 #define ANGLE 90
 
@@ -22,7 +22,7 @@ class Player{
         float rotation();
         Vector2f position();
         Ray* ray(int i);
-        bool checkCollision(const Maze& maze) const;
+        bool checkCollision(const Maze& maze);
         void move(const Maze& maze);
         void turnR();
         void turnL();
