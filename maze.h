@@ -1,23 +1,35 @@
 #ifndef MAZE_H
 #define MAZE_H
 
-#define NUMBER 20
-#define PI 3.142
-#define CUBE 7 // 285/(NUMBER*2-1)
 #include "SFML/Graphics.hpp"
-using namespace std;
 
-class Maze{
-    int arr[2*NUMBER-1][2*NUMBER-1];
-    public:
-        Maze();
-        void draw(sf::RenderWindow* w) const;
-        int getCell(int i, int j) const;
-        void updateMaze();
-        void showMat() const;
+#define NUMBER 25 // optimal size of maze
+#define SW 200
+#define BW 600
+#define PI 3.1415
+
+using namespace sf;
+
+/**
+ * Represents the maze for the game.
+ * Stores the maze layout, handles rendering to a texture,
+ * and provides methods to update and query cells.
+ */
+class Maze {
+    int arr[2 * NUMBER - 1][2 * NUMBER - 1];
+    RenderTexture* mazeTexture;
+    Sprite* mazeSprite;
+
+public:
+    Maze();
+    ~Maze();
+
+    void draw(RenderWindow* window) const;
+    void updateMaze();
+    void renderMaze();
+    void showMat() const;
+
+    int getCell(int i, int j) const;
 };
 
-
-
-
-#endif //MAZE_H
+#endif // MAZE_H

@@ -1,56 +1,78 @@
 #include "game.h"
 #include <iostream>
-#include "SFML/Audio.hpp"
 
+/**
+ * Constructor for Game.
+ * Initializes the score to 0.
+ */
+Game::Game() : points(0) {}
 
-Game::Game(){  
-}
-void Game::game(){
+/**
+ * Main game loop.
+ * Handles input, updates player and maze, manages scoring,
+ * and renders everything including points and timer.
+ */
+void Game::game() {
     sf::ContextSettings settings;
-    sf::RenderWindow window(sf::VideoMode(Vector2u(BW,BW)), "GAME");
+    sf::RenderWindow window(sf::VideoMode(Vector2u(BW, BW)), "GAME");
     window.setFramerateLimit(60);
-    // sf::Clock clock; 
-    // sf::Time deltaTime;
-    while(window.isOpen()){
-        while (const std::optional event = window.pollEvent()){
-            if (event->is<sf::Event::Closed>()){
+
+    sf::Font font("/System/Library/Fonts/Supplemental/Arial.ttf");
+    sf::Clock timerClock;
+    float elapsedTime = 0.f;
+
+    while (window.isOpen()) {
+        while (const std::optional event = window.pollEvent()) {
+            if (event->is<sf::Event::Closed>()) {
                 window.close();
                 exit(0);
             }
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) {
-            player.move(maze);
+
+        if (Keyboard::isKeyPressed(Keyboard::Key::W)) player.move(maze);
+        if (Keyboard::isKeyPressed(Keyboard::Key::A)) player.turnL();
+        if (Keyboard::isKeyPressed(Keyboard::Key::D)) player.turnR();
+        if (Keyboard::isKeyPressed(Keyboard::Key::U)) {
+            maze.updateMaze();
+            player.reset();
+            timerClock.restart();
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) {
-            player.turnL(); 
+
+        if (maze.getCell((int)player.position().y, (int)player.position().x) == 2) {
+            points++;
+            maze.updateMaze();
+            player.reset();
         }
-        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) {
-            player.turnR(); 
-        }
+
+        if (points < 3) elapsedTime = timerClock.getElapsedTime().asSeconds();
+
         window.clear();
         player.draw(&window, &maze);
-        window.display();  
-        // avr += (int)(1.0f / deltaTime.asSeconds());
-        // count++;
-        // if(count%500 == 0){
-        //     std::cout <<  "FPS " << avr/count << std::endl;
-        //     count = 0;
-        //     avr = 0;
-        // }
-        // deltaTime = clock.restart();
+
+        sf::Text pointsText(font);
+        pointsText.setString(std::to_string(points));
+        pointsText.setCharacterSize(24);
+        pointsText.setFillColor(sf::Color::White);
+        pointsText.setPosition({5, 5});
+        window.draw(pointsText);
+
+        // Draw timer (top-right)
+        sf::Text timerText(font);
+        timerText.setString(std::to_string(static_cast<int>(elapsedTime)));
+        timerText.setCharacterSize(24);
+        timerText.setFillColor(sf::Color::White);
+        timerText.setPosition({BW - 60, 5});
+        window.draw(timerText);
+
+        window.display();
     }
 }
-void Game::update(){
+
+/**
+ * Resets the game state.
+ * Resets player position and regenerates the maze.
+ */
+void Game::update() {
     player.reset();
     maze.updateMaze();
 }
-
-
-
-
-/*   g++ -g -std=c++23 main.cpp game.cpp maze.cpp player.cpp ray.cpp \
-    -I /Users/ronaldgrinberg/Desktop/SFML-3.0.0/include \
-    -L /Users/ronaldgrinberg/Desktop/SFML-3.0.0/lib \
-    -lsfml-graphics -lsfml-window -lsfml-system -pthread \
-    -o game -Wl,-rpath,/Users/ronaldgrinberg/Desktop/SFML-3.0.0/lib  
-*/

@@ -1,60 +1,56 @@
-#include "ray.h"
-#include "player.h"
-#include "maze.h"
 #include <iostream>
 #include <cmath>
+#include "maze.h"
+#include "ray.h"
+#include "player.h"
+
 using namespace std;
 
-Ray::Ray(){}
-void Ray::setPoints(Vector2f one, Vector2f two){
-    start = one;
-    end = two;
-}
-float Ray::len(){
-    return lenght;
-}
-Vector2f Ray::draw(float angle, const Maze* maze,  Vector2f current, RenderWindow* window, bool display){  
-    float len = 0;
-    Vector2f direction(std::cos(angle), std::sin(angle));
-    Vector2f res = current;
-    float tempx;
-    float tempy;
-    while(1){
-        int currx = (int)current.x/CUBE;
-        int curry = (int)current.y/CUBE;
-        if(angle <= (PI/2) || angle >= (1.5*PI)){
-            tempx = (currx+1)*(CUBE)-current.x;
-        } 
-        else{
-        tempx = current.x - currx*CUBE;  
-        } 
-        if(angle < PI ){
-            tempy = (curry +1)*(CUBE) - current.y;
-        } 
-        else {
-            tempy = current.y - curry*CUBE;
-        }
-        float z1 = abs(tempy/(sin(angle) != 0 ? sin(angle) : 1e-6));
-        float z2 = abs(tempx/(cos(angle) != 0 ? cos(angle) : 1e-6));
-        float t = fmin(z1, z2)+0.01;
-        len += t-0.01;
-        current+=direction*(t);
-        if(len >= RAY_LEN){
-            len = RAY_LEN;
-            break;
-        }
-        if(!(maze->getCell((int)current.y/CUBE, (int)current.x/CUBE))){
-            break;
-        }
-    }
-    current = res;
-    res += direction*len;
-    lenght = len;
-    if(display){
-        setPoints(current, res);
-        std::array line ={ Vertex{start},Vertex{end}};
-        window->draw(line.data(), line.size(), sf::PrimitiveType::Lines);
-    }
-    return res;
+/**
+ * Returns the length of the ray
+ */
+float Ray::len() const {
+    return length;
 }
 
+/**
+ * Casts a ray from a starting position in a given direction.
+ * Moves step-by-step until it hits a wall or reaches max length.
+ */
+void Ray::renderRay(float angle, Vector2f startPoint, const Maze* maze) {
+    double sinAngle = sin(angle);
+    double cosAngle = cos(angle);
+    double invSin = (sinAngle != 0.0) ? 1.0 / sinAngle : 1e30;
+    double invCos = (cosAngle != 0.0) ? 1.0 / cosAngle : 1e30;
+
+    Vector2f direction(cosAngle, sinAngle);
+    Vector2f current = startPoint;
+    float currentLength = 0.0f;
+    const float EPS = 1e-4f;
+
+    while (currentLength < RAY_LEN) {
+        int cellX = static_cast<int>(current.x);
+        int cellY = static_cast<int>(current.y);
+
+        float dx = (cosAngle > 0) ? (cellX + 1.0f - current.x) : (current.x - cellX);
+        float dy = (sinAngle > 0) ? (cellY + 1.0f - current.y) : (current.y - cellY);
+
+        float stepX = fabs(dy * invSin);
+        float stepY = fabs(dx * invCos);
+        float step = min(stepX, stepY) + EPS;
+
+        currentLength += step;
+        current += direction * step;
+
+        if (!maze->getCell(static_cast<int>(current.y), static_cast<int>(current.x))) {
+            break;
+        }
+    }
+
+    if (currentLength > RAY_LEN) {
+        currentLength = RAY_LEN;
+    }
+
+    end = startPoint + direction * currentLength;
+    length = currentLength;
+}

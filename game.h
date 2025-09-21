@@ -1,19 +1,22 @@
 #ifndef GAME_H
 #define GAME_H
+
 #include "maze.h"
 #include "player.h"
-#define SW 285
-#define BW 600
 
-class Game{
-    Player player;
-    Maze maze;
-    public:
-        Game();
-        void game();
-        void update();
+/**
+ * Main game class managing player, maze, score, and game loop.
+ * Handles initialization, updating the game state, and rendering.
+ */
+class Game {
+    Maze maze;       
+    Player player;  
+    int points;     
+
+public:
+    Game();
+    void game();     
+    void update();  
 };
 
-
-
-#endif //GAME_H
+#endif // GAME_H
