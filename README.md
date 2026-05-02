@@ -11,6 +11,10 @@ A real-time 3D maze game implemented in C++ using SFML with multithreaded raycas
 - Timer and score system
 - Minimap view
 
+## Screenshots
+
+![Maze](maze.png)
+
 ## Controls
 
 | Key | Action |
@@ -42,23 +46,3 @@ g++ -g -std=c++23 -o game main.cpp game.cpp maze.cpp player.cpp ray.cpp \
 - `maze.h/.cpp` - Maze generation and rendering
 - `player.h/.cpp` - Player movement and raycasting
 - `ray.h/.cpp` - Ray casting algorithm
-
-## Changes Summary
-
-### Naming Improvements
-- `NUMBER` → `MAZE_SIZE`
-- `SW` → `MINIMAP_SIZE`
-- `BW` → `WINDOW_SIZE`
-- `arr` → `mazeData`
-- `turnL()` → `rotateLeft()`
-- `turnR()` → `rotateRight()`
-- `len()` → `getLength()`
-- `renderRay()` → `cast()`
-
-### Design Improvements
-- Added `enum class MazeCell` for type-safe cell types
-- Private members with public getters
-- Separated game logic into handleEvents, update, render
-- Thread data structure for cleaner communication
-- Cross-platform font loading
-- Error handling in main
