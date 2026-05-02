@@ -1,56 +1,53 @@
-#include <iostream>
-#include <cmath>
-#include "maze.h"
 #include "ray.h"
-#include "player.h"
+#include <cmath>
+#include <algorithm>
 
-using namespace std;
-
-/**
- * Returns the length of the ray
- */
-float Ray::len() const {
-    return length;
-}
-
-/**
- * Casts a ray from a starting position in a given direction.
- * Moves step-by-step until it hits a wall or reaches max length.
- */
-void Ray::renderRay(float angle, Vector2f startPoint, const Maze* maze) {
-    double sinAngle = sin(angle);
-    double cosAngle = cos(angle);
-    double invSin = (sinAngle != 0.0) ? 1.0 / sinAngle : 1e30;
-    double invCos = (cosAngle != 0.0) ? 1.0 / cosAngle : 1e30;
-
-    Vector2f direction(cosAngle, sinAngle);
-    Vector2f current = startPoint;
-    float currentLength = 0.0f;
-    const float EPS = 1e-4f;
-
-    while (currentLength < RAY_LEN) {
-        int cellX = static_cast<int>(current.x);
-        int cellY = static_cast<int>(current.y);
-
-        float dx = (cosAngle > 0) ? (cellX + 1.0f - current.x) : (current.x - cellX);
-        float dy = (sinAngle > 0) ? (cellY + 1.0f - current.y) : (current.y - cellY);
-
-        float stepX = fabs(dy * invSin);
-        float stepY = fabs(dx * invCos);
-        float step = min(stepX, stepY) + EPS;
-
-        currentLength += step;
-        current += direction * step;
-
-        if (!maze->getCell(static_cast<int>(current.y), static_cast<int>(current.x))) {
+void Ray::cast(float angle, sf::Vector2f startPoint, const Maze* maze) {
+    origin = startPoint;
+    
+    sf::Vector2f direction(std::cos(angle), std::sin(angle));
+    
+    double invSin = (std::sin(angle) != 0.0) ? 1.0 / std::sin(angle) : 1e30;
+    double invCos = (std::cos(angle) != 0.0) ? 1.0 / std::cos(angle) : 1e30;
+    
+    sf::Vector2f currentPosition = startPoint;
+    float currentDistance = 0.0f;
+    
+    while (currentDistance < RAY_MAX_DISTANCE) {
+        int cellX = static_cast<int>(currentPosition.x);
+        int cellY = static_cast<int>(currentPosition.y);
+        
+        float dx, dy;
+        if (direction.x > 0) {
+            dx = (cellX + 1.0f - currentPosition.x);
+        } else {
+            dx = (currentPosition.x - cellX);
+        }
+        
+        if (direction.y > 0) {
+            dy = (cellY + 1.0f - currentPosition.y);
+        } else {
+            dy = (currentPosition.y - cellY);
+        }
+        
+        float stepX = std::fabs(dy * invSin);
+        float stepY = std::fabs(dx * invCos);
+        
+        float step = std::min(stepX, stepY) + RAY_EPSILON;
+        
+        currentDistance += step;
+        currentPosition += direction * step;
+        
+        if (maze->getCell(static_cast<int>(currentPosition.y), 
+                          static_cast<int>(currentPosition.x)) == MazeCell::Empty) {
             break;
         }
     }
-
-    if (currentLength > RAY_LEN) {
-        currentLength = RAY_LEN;
+    
+    if (currentDistance > RAY_MAX_DISTANCE) {
+        currentDistance = RAY_MAX_DISTANCE;
     }
-
-    end = startPoint + direction * currentLength;
-    length = currentLength;
+    
+    hitPoint = startPoint + direction * currentDistance;
+    rayLength = currentDistance;
 }

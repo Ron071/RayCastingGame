@@ -1,190 +1,189 @@
 #include "player.h"
 #include <iostream>
-#include <unistd.h>
+#include <cmath>
+#include <algorithm>
 
-/**
- * Constructor for Player.
- * Initializes player shape, rays, ray directions, shapes for rendering,
- * and prepares multithreaded raycasting data structures.
- */
-Player::Player() : player(CircleShape(0.1f, 10)) {
-    player.setPosition(Vector2f(1.5f, 1.5f));
-    player.setOrigin(Vector2f(0.1f, 0.1f));
+pthread_mutex_t Player::renderMutex = PTHREAD_MUTEX_INITIALIZER;
 
-    for (int i = 0; i < RAYS; i++) {
+Player::Player() 
+    : position(INITIAL_X, INITIAL_Y),
+      rotationAngle(0.0f),
+      playerShape(PLAYER_RADIUS, 10) {
+    
+    playerShape.setPosition(position);
+    playerShape.setOrigin(sf::Vector2f(PLAYER_RADIUS, PLAYER_RADIUS));
+    playerShape.setFillColor(sf::Color::Magenta);
+    
+    rays.reserve(RAY_COUNT);
+    rayAngles.reserve(RAY_COUNT);
+    
+    for (int i = 0; i < RAY_COUNT; i++) {
         rays.push_back(Ray());
-        rayDirections.push_back(atan(2 * (float)(i - RAYS / 2) / RAYS));
+        float normalizedIndex = static_cast<float>(i) / RAY_COUNT;
+        float angleOffset = std::atan(2.0f * (normalizedIndex - 0.5f));
+        rayAngles.push_back(angleOffset);
     }
-
-    shapes.resize(RAYS);
-
-    int raysPerThread = RAYS / THREAD_COUNT;
-    int remainder = RAYS % THREAD_COUNT;
+    
+    wallStrips.resize(RAY_COUNT);
+    
+    int raysPerThread = RAY_COUNT / THREAD_COUNT;
+    int remainder = RAY_COUNT % THREAD_COUNT;
     int startIndex = 0;
-
+    
     for (int t = 0; t < THREAD_COUNT; t++) {
         int endIndex = startIndex + raysPerThread + (t < remainder ? 1 : 0);
-        threadData.push_back(Data(startIndex, endIndex, nullptr, this, &shapes, nullptr));
+        threadData.push_back(RaycastThreadData(startIndex, endIndex, nullptr, this, &wallStrips, nullptr));
         startIndex = endIndex;
     }
 }
 
-/**
- * Returns the player's rotation in radians.
- */
-float Player::rotation() {
-    return player.getRotation().asRadians();
-}
-
-/**
- * Returns the player's current position.
- */
-Vector2f Player::position() {
-    return player.getPosition();
-}
-
-/**
- * Returns a pointer to the i-th ray.
- */
-Ray* Player::ray(int i) {
-    return &rays[i];
-}
-
-/**
- * Returns the direction of the i-th ray relative to the player.
- */
-float Player::getRayDirection(int i) const {
-    return rayDirections[i];
-}
-
-/**
- * Casts a ray at a given index from the player in a specified angle.
- * Updates the ray's length based on maze intersections.
- */
-void Player::renderRay(int i, float angle, Vector2f startPoint, const Maze* maze) {
-    rays[i].renderRay(angle, startPoint, maze);
-}
-
-// -------------------- Multithreaded raycasting --------------------
-pthread_mutex_t windowMutex = PTHREAD_MUTEX_INITIALIZER;
-
-/**
- * Thread function to process a subset of rays.
- * Calculates ray intersection lengths, prepares shapes, and draws them safely.
- */
-void* processRays(void* args) {
-    Data* data = static_cast<Data*>(args);
-    Vector2f current = data->player->position();
-    float rotation = data->player->rotation();
-
-    for (int i = data->startIndex; i < data->endIndex; ++i) {
-        float direction = data->player->getRayDirection(i);
-        float cosAngle = cos(direction);
-
-        direction += rotation;
-        if (direction > 2 * PI) direction -= 2 * PI;
-        else if (direction < 0) direction += 2 * PI;
-
-        data->player->renderRay(i, direction, current, data->maze);
-
-        float height = ((float)BW / 2) / (data->player->ray(i)->len() * cosAngle);
-
-        RectangleShape shape(Vector2f((float)BW / RAYS, height));
-        shape.setFillColor(Color(0, 255 * (1 - (data->player->ray(i)->len() / RAY_LEN)), 0));
-        shape.setPosition(Vector2f(i * (float)BW / RAYS, 0.4f * (BW - height)));
-
-        (*data->shapes)[i] = shape;
-
-        // Thread-safe draw
-        pthread_mutex_lock(&windowMutex);
-        data->window->draw(shape);
-        pthread_mutex_unlock(&windowMutex);
+void Player::move(const Maze& maze) {
+    if (wouldCollide(maze)) {
+        return;
     }
+    
+    sf::Vector2f movement(
+        PLAYER_SPEED * std::cos(rotationAngle),
+        PLAYER_SPEED * std::sin(rotationAngle)
+    );
+    
+    position += movement;
+    playerShape.setPosition(position);
+}
 
+void Player::rotateLeft() {
+    rotationAngle -= PLAYER_SPEED * 2.0f;
+    while (rotationAngle < 0.0f) {
+        rotationAngle += 2.0f * PI;
+    }
+}
+
+void Player::rotateRight() {
+    rotationAngle += PLAYER_SPEED * 2.0f;
+    while (rotationAngle >= 2.0f * PI) {
+        rotationAngle -= 2.0f * PI;
+    }
+}
+
+void Player::reset() {
+    position = sf::Vector2f(INITIAL_X, INITIAL_Y);
+    rotationAngle = 0.0f;
+    playerShape.setPosition(position);
+}
+
+bool Player::wouldCollide(const Maze& maze) const {
+    sf::Vector2f nextPosition = position + sf::Vector2f(
+        PLAYER_SPEED * std::cos(rotationAngle),
+        PLAYER_SPEED * std::sin(rotationAngle)
+    );
+    
+    int cellX = static_cast<int>(nextPosition.x);
+    int cellY = static_cast<int>(nextPosition.y);
+    
+    return maze.getCell(cellY, cellX) == MazeCell::Empty;
+}
+
+float Player::getRayDirection(int rayIndex) const {
+    float direction = rayAngles[rayIndex];
+    direction += rotationAngle;
+    
+    while (direction > 2.0f * PI) {
+        direction -= 2.0f * PI;
+    }
+    while (direction < 0.0f) {
+        direction += 2.0f * PI;
+    }
+    
+    return direction;
+}
+
+void Player::castRay(int rayIndex, float angle, sf::Vector2f startPoint, const Maze* maze) {
+    rays[rayIndex].cast(angle, startPoint, maze);
+}
+
+void* processRayThread(void* args) {
+    RaycastThreadData* data = static_cast<RaycastThreadData*>(args);
+    
+    sf::Vector2f playerPos = data->player->getPosition();
+    float playerRot = data->player->getRotation();
+    
+    for (int i = data->startRayIndex; i < data->endRayIndex; i++) {
+        float direction = data->player->getRayDirection(i);
+        float cosAngle = std::cos(direction - playerRot);
+        
+        data->player->castRay(i, direction, playerPos, data->maze);
+        
+        float rayDistance = data->player->getRay(i)->getLength();
+        float wallHeight = (static_cast<float>(WINDOW_SIZE) / 2.0f) / (rayDistance * cosAngle);
+        
+        sf::RectangleShape wallStrip(
+            sf::Vector2f(static_cast<float>(WINDOW_SIZE) / RAY_COUNT, wallHeight)
+        );
+        
+        float brightness = 255.0f * (1.0f - rayDistance / RAY_MAX_DISTANCE);
+        brightness = std::max(0.0f, std::min(255.0f, brightness));
+        wallStrip.setFillColor(sf::Color(0, static_cast<std::uint8_t>(brightness), 0));
+        
+        wallStrip.setPosition(
+            sf::Vector2f(
+                i * static_cast<float>(WINDOW_SIZE) / RAY_COUNT,
+                0.4f * (WINDOW_SIZE - wallHeight)
+            )
+        );
+        
+        (*data->wallStrips)[i] = wallStrip;
+        
+        pthread_mutex_lock(&Player::renderMutex);
+        data->window->draw(wallStrip);
+        pthread_mutex_unlock(&Player::renderMutex);
+    }
+    
     return nullptr;
 }
 
-/**
- * Draws the player and all rays to the window.
- * Uses multithreading to calculate ray positions and shapes.
- */
-void Player::draw(RenderWindow* window, const Maze* maze) {
-    drawInterior(window);
-
-    for (auto& d : threadData) {
-        d.maze = maze;
-        d.window = window;
+void Player::render(sf::RenderWindow* window, const Maze* maze) {
+    renderBackground(window);
+    
+    for (auto& data : threadData) {
+        data.maze = maze;
+        data.window = window;
     }
-
+    
     for (int t = 0; t < THREAD_COUNT; t++) {
-        pthread_create(&threads[t], nullptr, processRays, &threadData[t]);
+        pthread_create(&threadIds[t], nullptr, processRayThread, &threadData[t]);
     }
+    
     for (int t = 0; t < THREAD_COUNT; t++) {
-        pthread_join(threads[t], nullptr);
+        pthread_join(threadIds[t], nullptr);
     }
-
+    
     maze->draw(window);
-
-    float cubeSize = (float)SW / (2 * NUMBER - 1);
-    CircleShape player_on_screen(1, 5);
-    player_on_screen.setOrigin({1, 1});
-    player_on_screen.setFillColor(Color::Magenta);
-    player_on_screen.setScale(Vector2f(cubeSize, cubeSize));
-    player_on_screen.setPosition(Vector2f(position().x * cubeSize,
-                                          BW - SW + position().y * cubeSize));
-    window->draw(player_on_screen);
+    renderMinimapPlayer(window, maze);
 }
 
-/**
- * Draws the static sky and floor.
- */
-void Player::drawInterior(RenderWindow* window) const {
-    RectangleShape sky(Vector2f(BW, BW));
-    sky.setFillColor(Color(0, 0, 50));
+void Player::renderBackground(sf::RenderWindow* window) const {
+    sf::RectangleShape sky(sf::Vector2f(WINDOW_SIZE, WINDOW_SIZE));
+    sky.setFillColor(sf::Color(0, 0, 50));
     window->draw(sky);
-
-    RectangleShape floor(Vector2f(BW, BW));
-    floor.setPosition({0, BW / 2.5f});
-    floor.setFillColor(Color(0, 50, 0));
+    
+    sf::RectangleShape floor(sf::Vector2f(WINDOW_SIZE, WINDOW_SIZE / 2.5f));
+    floor.setPosition(sf::Vector2f(0, WINDOW_SIZE / 2.5f));
+    floor.setFillColor(sf::Color(0, 50, 0));
     window->draw(floor);
 }
 
-/**
- * Checks if the next movement collides with maze walls.
- */
-bool Player::checkCollision(const Maze& maze) {
-    Vector2f nextPos = player.getPosition() +
-                       Vector2f(SPEED * cos(rotation()), SPEED * sin(rotation()));
-    return !(maze.getCell((int)nextPos.y, (int)nextPos.x));
-}
-
-/**
- * Moves the player forward if no collision.
- */
-void Player::move(const Maze& maze) {
-    if (!checkCollision(maze)) {
-        player.move(Vector2f(SPEED * cos(rotation()), SPEED * sin(rotation())));
-    }
-}
-
-/**
- * Rotates the player to the right.
- */
-void Player::turnR() {
-    player.rotate(degrees(100 * SPEED));
-}
-
-/**
- * Rotates the player to the left.
- */
-void Player::turnL() {
-    player.rotate(degrees(-100 * SPEED));
-}
-
-/**
- * Resets the player to the starting position and rotation.
- */
-void Player::reset() {
-    player.setPosition(Vector2f(1.5f, 1.5f));
-    player.setRotation(radians(0));
+void Player::renderMinimapPlayer(sf::RenderWindow* window, const Maze* maze) const {
+    float minimapCellSize = static_cast<float>(MINIMAP_SIZE) / (2 * MAZE_SIZE - 1);
+    
+    sf::CircleShape minimapPlayer(1.0f, 5);
+    minimapPlayer.setOrigin(sf::Vector2f(1.0f, 1.0f));
+    minimapPlayer.setFillColor(sf::Color::Magenta);
+    minimapPlayer.setScale(sf::Vector2f(minimapCellSize, minimapCellSize));
+    
+    minimapPlayer.setPosition(sf::Vector2f(
+        position.x * minimapCellSize,
+        WINDOW_SIZE - MINIMAP_SIZE + position.y * minimapCellSize
+    ));
+    
+    window->draw(minimapPlayer);
 }

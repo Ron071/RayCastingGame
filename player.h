@@ -3,62 +3,70 @@
 
 #include "ray.h"
 #include "maze.h"
-#include "SFML/Graphics.hpp"
+#include <SFML/Graphics.hpp>
 #include <pthread.h>
 #include <vector>
 
-using namespace sf;
-using namespace std;
+const float PLAYER_SPEED = 0.05f;
+const int RAY_COUNT = 600;
+const float FIELD_OF_VIEW = 90.0f;
+const int THREAD_COUNT = 7;
+const float PLAYER_RADIUS = 0.1f;
+const float INITIAL_X = 1.5f;
+const float INITIAL_Y = 1.5f;
 
-#define SPEED 0.05
-#define RAYS 600
-#define ANGLE 90
-#define THREAD_COUNT 7
+class Player;
 
-/**
- * Represents the player in the game.
- * Handles movement, rotation, raycasting, and rendering.
- * Uses multithreading to cast rays efficiently and stores the results for rendering.
- */
-struct Data {
-    int startIndex;
-    int endIndex;
+struct RaycastThreadData {
+    int startRayIndex;
+    int endRayIndex;
     const Maze* maze;
-    class Player* player;
-    vector<RectangleShape>* shapes;
-    RenderWindow* window;
-
-    Data(int start, int end, const Maze* maze, Player* player,
-         vector<RectangleShape>* shapes, RenderWindow* window)
-        : startIndex(start), endIndex(end), maze(maze),
-          player(player), shapes(shapes), window(window) {}
+    Player* player;
+    std::vector<sf::RectangleShape>* wallStrips;
+    sf::RenderWindow* window;
+    
+    RaycastThreadData(int start, int end, const Maze* m, Player* p,
+                      std::vector<sf::RectangleShape>* strips, sf::RenderWindow* w)
+        : startRayIndex(start), endRayIndex(end), maze(m),
+          player(p), wallStrips(strips), window(w) {}
 };
 
 class Player {
-    CircleShape player;
-    vector<Ray> rays;
-    vector<float> rayDirections;
-    vector<RectangleShape> shapes;
-    vector<Data> threadData;
-    pthread_t threads[THREAD_COUNT];
+private:
+    sf::CircleShape playerShape;
+    sf::Vector2f position;
+    float rotationAngle;
+    
+    std::vector<Ray> rays;
+    std::vector<float> rayAngles;
+    std::vector<sf::RectangleShape> wallStrips;
+    
+    std::vector<RaycastThreadData> threadData;
+    pthread_t threadIds[THREAD_COUNT];
+    
+    static pthread_mutex_t renderMutex;
+    
+    float getRayDirection(int rayIndex) const;
+    bool wouldCollide(const Maze& maze) const;
+    void renderBackground(sf::RenderWindow* window) const;
+    void renderMinimapPlayer(sf::RenderWindow* window, const Maze* maze) const;
 
 public:
     Player();
-
-    void draw(RenderWindow* window, const Maze* maze);
-    void drawInterior(RenderWindow* window) const;
-
-    Vector2f position();
-    float rotation();
-    float getRayDirection(int i) const;
-    Ray* ray(int i);
-    void renderRay(int i, float angle, Vector2f startPoint, const Maze* maze);
-
-    bool checkCollision(const Maze& maze);
-    void move(const Maze& maze);
-    void turnL();
-    void turnR();
+    
+    sf::Vector2f getPosition() const { return position; }
+    float getRotation() const { return rotationAngle; }
+    Ray* getRay(int index) { return &rays[index]; }
+    
     void reset();
+    void move(const Maze& maze);
+    void rotateLeft();
+    void rotateRight();
+    
+    void render(sf::RenderWindow* window, const Maze* maze);
+    void castRay(int rayIndex, float angle, sf::Vector2f startPoint, const Maze* maze);
+    
+    friend void* processRayThread(void* args);
 };
 
 #endif // PLAYER_H

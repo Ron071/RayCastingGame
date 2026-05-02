@@ -1,35 +1,37 @@
 #ifndef MAZE_H
 #define MAZE_H
 
-#include "SFML/Graphics.hpp"
+#include <SFML/Graphics.hpp>
 
-#define NUMBER 25 // optimal size of maze
-#define SW 200
-#define BW 600
-#define PI 3.1415
+const int MAZE_SIZE = 25;
+const int MINIMAP_SIZE = 200;
+const int WINDOW_SIZE = 600;
+const float PI = 3.14159265359f;
 
-using namespace sf;
+enum class MazeCell {
+    Empty = 0,
+    Path = 1,
+    Goal = 2
+};
 
-/**
- * Represents the maze for the game.
- * Stores the maze layout, handles rendering to a texture,
- * and provides methods to update and query cells.
- */
 class Maze {
-    int arr[2 * NUMBER - 1][2 * NUMBER - 1];
-    RenderTexture* mazeTexture;
-    Sprite* mazeSprite;
+private:
+    int mazeData[2 * MAZE_SIZE - 1][2 * MAZE_SIZE - 1];
+    sf::RenderTexture* mazeTexture;
+    sf::Sprite* mazeSprite;
+    
+    void generateMaze(int arr[2 * MAZE_SIZE - 1][2 * MAZE_SIZE - 1]);
+    void renderToTexture();
 
 public:
     Maze();
     ~Maze();
-
-    void draw(RenderWindow* window) const;
+    
     void updateMaze();
-    void renderMaze();
-    void showMat() const;
-
-    int getCell(int i, int j) const;
+    void draw(sf::RenderWindow* window) const;
+    MazeCell getCell(int row, int col) const;
+    void printMaze() const;
+    int getMazeSize() const { return 2 * MAZE_SIZE - 1; }
 };
 
 #endif // MAZE_H

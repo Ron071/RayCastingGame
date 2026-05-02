@@ -2,24 +2,33 @@
 #define RAY_H
 
 #include "maze.h"
-#define RAY_LEN 8
+#include <SFML/Graphics.hpp>
 
-using namespace sf;
+const float RAY_MAX_DISTANCE = 8.0f;
+const float RAY_EPSILON = 1e-4f;
 
-/**
- * Represents a single ray used for raycasting.
- * Each ray has a start, an end, and a computed length
- * based on collision with the maze walls.
- */
 class Ray {
-    Vector2f start;
-    Vector2f end;
-    float length;
+private:
+    sf::Vector2f origin;
+    sf::Vector2f hitPoint;
+    float rayLength;
 
 public:
     Ray() = default;
-    float len() const;  
-    void renderRay(float angle, Vector2f startPoint, const Maze* maze);
+    explicit Ray(sf::Vector2f startOrigin) 
+        : origin(startOrigin), hitPoint(startOrigin), rayLength(0.0f) {}
+    
+    float getLength() const { return rayLength; }
+    sf::Vector2f getOrigin() const { return origin; }
+    sf::Vector2f getHitPoint() const { return hitPoint; }
+    
+    void cast(float angle, sf::Vector2f startPoint, const Maze* maze);
+    bool didHit() const { return rayLength < RAY_MAX_DISTANCE; }
+    
+    void reset() {
+        rayLength = 0.0f;
+        hitPoint = origin;
+    }
 };
 
 #endif // RAY_H

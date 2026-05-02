@@ -1,130 +1,132 @@
 #include "maze.h"
 #include <random>
 #include <iostream>
+#include <chrono>
 
-using namespace std;
-
-/**
- * Generate a new maze layout.
- * Fills helper matrix, builds base grid, carves connections, and places a goal.
- */
-static void update(int arr[2 * NUMBER - 1][2 * NUMBER - 1]) {
-    int temp[NUMBER - 1][NUMBER - 1];
-
-    for (int i = 0; i < NUMBER - 1; i++) {
-        for (int j = 0; j < NUMBER - 1; j++) {
-            if (i == NUMBER - 2) temp[i][j] = 2;
-            else if (j == NUMBER - 2) temp[i][j] = 1;
-            else temp[i][j] = (rand() % 2) ? 1 : 2;
+void Maze::generateMaze(int arr[2 * MAZE_SIZE - 1][2 * MAZE_SIZE - 1]) {
+    int pathDecisions[MAZE_SIZE - 1][MAZE_SIZE - 1];
+    
+    static bool seeded = false;
+    if (!seeded) {
+        srand(static_cast<unsigned>(std::chrono::system_clock::now().time_since_epoch().count()));
+        seeded = true;
+    }
+    
+    for (int i = 0; i < MAZE_SIZE - 1; i++) {
+        for (int j = 0; j < MAZE_SIZE - 1; j++) {
+            if (i == MAZE_SIZE - 2) {
+                pathDecisions[i][j] = static_cast<int>(MazeCell::Path);
+            } else if (j == MAZE_SIZE - 2) {
+                pathDecisions[i][j] = static_cast<int>(MazeCell::Path);
+            } else {
+                pathDecisions[i][j] = (rand() % 2) ? static_cast<int>(MazeCell::Path) : static_cast<int>(MazeCell::Goal);
+            }
         }
     }
-
-    for (int i = 0; i < 2 * NUMBER - 1; i++) {
-        for (int j = 0; j < 2 * NUMBER - 1; j++) {
-            if (i == 0 || j == 0 || i == 2 * NUMBER - 2 || j == 2 * NUMBER - 2)
-                arr[i][j] = 0;
-            else if (i % 2 && j % 2) arr[i][j] = 1;
-            else arr[i][j] = 0;
+    
+    for (int i = 0; i < 2 * MAZE_SIZE - 1; i++) {
+        for (int j = 0; j < 2 * MAZE_SIZE - 1; j++) {
+            if (i == 0 || j == 0 || i == 2 * MAZE_SIZE - 2 || j == 2 * MAZE_SIZE - 2) {
+                arr[i][j] = static_cast<int>(MazeCell::Empty);
+            } else if (i % 2 == 1 && j % 2 == 1) {
+                arr[i][j] = static_cast<int>(MazeCell::Path);
+            } else {
+                arr[i][j] = static_cast<int>(MazeCell::Empty);
+            }
         }
     }
-
-    for (int i = 0; i < NUMBER - 1; i++) {
-        for (int j = 0; j < NUMBER - 1; j++) {
-            if (i == NUMBER - 2 && j == NUMBER - 2) continue;
-            if (temp[i][j] == 1) arr[2 * i + 2][2 * j + 1] = 1;
-            else arr[2 * i + 1][2 * j + 2] = 1;
+    
+    for (int i = 0; i < MAZE_SIZE - 1; i++) {
+        for (int j = 0; j < MAZE_SIZE - 1; j++) {
+            if (i == MAZE_SIZE - 2 && j == MAZE_SIZE - 2) continue;
+            
+            if (pathDecisions[i][j] == static_cast<int>(MazeCell::Path)) {
+                arr[2 * i + 2][2 * j + 1] = static_cast<int>(MazeCell::Path);
+            } else {
+                arr[2 * i + 1][2 * j + 2] = static_cast<int>(MazeCell::Path);
+            }
         }
     }
-
+    
     while (true) {
-        int i = rand() % (2 * NUMBER - 1);
-        int j = rand() % (2 * NUMBER - 1);
-        if (arr[i][j] == 1) {
-            arr[i][j] = 2;
-            return;
+        int randomRow = rand() % (2 * MAZE_SIZE - 1);
+        int randomCol = rand() % (2 * MAZE_SIZE - 1);
+        
+        if (arr[randomRow][randomCol] == static_cast<int>(MazeCell::Path)) {
+            arr[randomRow][randomCol] = static_cast<int>(MazeCell::Goal);
+            break;
         }
     }
 }
 
-/**
- * Constructor for Maze.
- * Initializes texture and sprite, and generates initial maze.
- */
 Maze::Maze() {
-    mazeTexture = new RenderTexture({SW, SW});
-    mazeSprite = new Sprite(mazeTexture->getTexture());
-    mazeSprite->move(Vector2f(0, BW - SW));
+    mazeTexture = new sf::RenderTexture({MINIMAP_SIZE, MINIMAP_SIZE});
+    mazeSprite = new sf::Sprite(mazeTexture->getTexture());
+    mazeSprite->setPosition(sf::Vector2f(0.0f, WINDOW_SIZE - MINIMAP_SIZE));
+    
     updateMaze();
 }
 
-/**
- * Destructor for Maze.
- * Cleans up allocated texture and sprite.
- */
 Maze::~Maze() {
     delete mazeTexture;
     delete mazeSprite;
 }
 
-/**
- * Renders the maze into its texture.
- * Colors walls white, paths black, goal red.
- */
-void Maze::renderMaze() {
-    float cubeSize = (float)SW / (2 * NUMBER - 1);
-    mazeTexture->clear(Color::Black);
-
-    RectangleShape cube({cubeSize, cubeSize});
-    for (int i = 0; i < 2 * NUMBER - 1; i++) {
-        for (int j = 0; j < 2 * NUMBER - 1; j++) {
-            if (arr[i][j] == 0) cube.setFillColor(Color::White);
-            else if (arr[i][j] == 2) cube.setFillColor(Color::Red);
-            else continue;
-
-            cube.setPosition(Vector2f(cubeSize * j, cubeSize * i));
-            mazeTexture->draw(cube);
-        }
-    }
-    mazeTexture->display();
-}
-
-/**
- * Draws the maze sprite on a window.
- */
-void Maze::draw(RenderWindow* window) const {
-    window->draw(*mazeSprite);
-}
-
-/**
- * Returns the value of a cell at (i, j).
- */
-int Maze::getCell(int i, int j) const {
-    return arr[i][j];
-}
-
-/**
- * Updates the maze by generating a new layout and rendering it.
- * Also saves the maze as an image.
- */
 void Maze::updateMaze() {
-    update(arr);
-    renderMaze();
-
-    Image img = mazeTexture->getTexture().copyToImage();
-    if (!img.saveToFile("maze.png")) {
-        cout << "FAILED TO SAVE MAZE IMAGE" << endl;
+    generateMaze(mazeData);
+    renderToTexture();
+    
+    sf::Image mazeImage = mazeTexture->getTexture().copyToImage();
+    if (!mazeImage.saveToFile("maze.png")) {
+        std::cerr << "Warning: Failed to save maze image" << std::endl;
     }
 }
 
-/**
- * Prints the maze layout to console.
- */
-void Maze::showMat() const {
-    for (int i = 0; i < 2 * NUMBER - 1; i++) {
-        for (int j = 0; j < 2 * NUMBER - 1; j++) {
-            cout << arr[i][j] << "  ";
-        }
-        cout << endl;
+void Maze::draw(sf::RenderWindow* window) const {
+    if (window && mazeSprite) {
+        window->draw(*mazeSprite);
     }
-    cout << endl << endl;
+}
+
+MazeCell Maze::getCell(int row, int col) const {
+    if (row < 0 || row >= 2 * MAZE_SIZE - 1 || col < 0 || col >= 2 * MAZE_SIZE - 1) {
+        return MazeCell::Empty;
+    }
+    return static_cast<MazeCell>(mazeData[row][col]);
+}
+
+void Maze::printMaze() const {
+    std::cout << "\n=== Maze Layout ===" << std::endl;
+    for (int i = 0; i < 2 * MAZE_SIZE - 1; i++) {
+        for (int j = 0; j < 2 * MAZE_SIZE - 1; j++) {
+            std::cout << mazeData[i][j] << "  ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "===================\n" << std::endl;
+}
+
+void Maze::renderToTexture() {
+    float cellSize = static_cast<float>(MINIMAP_SIZE) / (2 * MAZE_SIZE - 1);
+    mazeTexture->clear(sf::Color::Black);
+    
+    sf::RectangleShape cellShape(sf::Vector2f(cellSize, cellSize));
+    
+    for (int row = 0; row < 2 * MAZE_SIZE - 1; row++) {
+        for (int col = 0; col < 2 * MAZE_SIZE - 1; col++) {
+            MazeCell cellType = static_cast<MazeCell>(mazeData[row][col]);
+            
+            if (cellType == MazeCell::Empty) {
+                cellShape.setFillColor(sf::Color::White);
+                cellShape.setPosition(sf::Vector2f(col * cellSize, row * cellSize));
+                mazeTexture->draw(cellShape);
+            } else if (cellType == MazeCell::Goal) {
+                cellShape.setFillColor(sf::Color::Red);
+                cellShape.setPosition(sf::Vector2f(col * cellSize, row * cellSize));
+                mazeTexture->draw(cellShape);
+            }
+        }
+    }
+    
+    mazeTexture->display();
 }

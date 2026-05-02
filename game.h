@@ -3,20 +3,29 @@
 
 #include "maze.h"
 #include "player.h"
+#include <SFML/Graphics.hpp>
 
-/**
- * Main game class managing player, maze, score, and game loop.
- * Handles initialization, updating the game state, and rendering.
- */
 class Game {
-    Maze maze;       
-    Player player;  
-    int points;     
+private:
+    Maze maze;
+    Player player;
+    int score;
+    float elapsedTime;
+    sf::Font font;
+    sf::Clock gameClock;
+
+    void handleEvents(sf::RenderWindow& window);
+    void update(float deltaTime);
+    void render(sf::RenderWindow& window);
+    void checkGoalCollection();
+    void renderUI(sf::RenderWindow& window);
+    void resetGame();
 
 public:
     Game();
-    void game();     
-    void update();  
+    void run();
+    int getScore() const { return score; }
+    float getElapsedTime() const { return elapsedTime; }
 };
 
 #endif // GAME_H
