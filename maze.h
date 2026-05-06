@@ -3,35 +3,44 @@
 
 #include <SFML/Graphics.hpp>
 
-const int MAZE_SIZE = 25;
-const int MINIMAP_SIZE = 200;
-const int WINDOW_SIZE = 600;
-const float PI = 3.14159265359f;
+// Maximum maze size (must be odd)
+constexpr int MAX_MAZE_SIZE = 51;
+constexpr int MAX_GRID_SIZE = 2 * MAX_MAZE_SIZE - 1;
 
+// Default display constants
+constexpr int DEFAULT_MINIMAP_SIZE = 200;
+constexpr int DEFAULT_WINDOW_SIZE = 600;
+constexpr float PI = 3.14159265359f;
+
+// Cell types in the maze
 enum class MazeCell {
-    Empty = 0,
-    Path = 1,
-    Goal = 2
+    Empty = 0,  // Wall
+    Path = 1,   // Walkable path
+    Goal = 2    // Goal/target
 };
 
 class Maze {
 private:
-    int mazeData[2 * MAZE_SIZE - 1][2 * MAZE_SIZE - 1];
-    sf::RenderTexture* mazeTexture;
-    sf::Sprite* mazeSprite;
-    
-    void generateMaze(int arr[2 * MAZE_SIZE - 1][2 * MAZE_SIZE - 1]);
+    int mazeData[MAX_GRID_SIZE][MAX_GRID_SIZE];
+    sf::RenderTexture mazeTexture;
+    sf::Sprite mazeSprite;
+    int mazeSize;        // Actual maze size (odd number)
+    int gridSize;        // = 2 * mazeSize - 1
+    int minimapSize;     // Minimap display size
+
+    void generateMaze();
     void renderToTexture();
 
 public:
-    Maze();
-    ~Maze();
-    
+    Maze(int size = 25, int minimapSz = 200);
+
     void updateMaze();
     void draw(sf::RenderWindow* window) const;
     MazeCell getCell(int row, int col) const;
     void printMaze() const;
-    int getMazeSize() const { return 2 * MAZE_SIZE - 1; }
+    int getMazeSize() const { return mazeSize; }
+    int getGridSize() const { return gridSize; }
+    int getMinimapSize() const { return minimapSize; }
 };
 
 #endif // MAZE_H

@@ -1,14 +1,17 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include "config.h"
 #include "maze.h"
 #include "player.h"
 #include <SFML/Graphics.hpp>
+#include <memory>
 
 class Game {
 private:
-    Maze maze;
-    Player player;
+    GameConfig config;
+    std::unique_ptr<Maze> maze;
+    std::unique_ptr<Player> player;
     int score;
     float elapsedTime;
     sf::Font font;
@@ -22,8 +25,9 @@ private:
     void resetGame();
 
 public:
-    Game();
+    explicit Game(const GameConfig& cfg);
     void run();
+
     int getScore() const { return score; }
     float getElapsedTime() const { return elapsedTime; }
 };
